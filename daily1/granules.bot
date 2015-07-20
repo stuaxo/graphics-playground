@@ -1,0 +1,27 @@
+import random
+from math import sin, cos
+
+size(800, 800)
+colours=ximport("colors")
+
+
+def draw():
+    background(colors.aliceblue())
+    scale(1, 1)
+    nostroke()
+    fill(0.1, 0.2, 0.3)
+
+    random.seed(0)
+    for y in xrange(0, HEIGHT, 80):
+        wiggle = sin(FRAME * 0.1)
+        xs = 2.0 * cos(y) + sin(y) * 4.0 + wiggle
+
+        distance = 1.0 / HEIGHT * y
+        fill(1.0, 1.0, 0, distance)
+        for x in xrange(0, 60):
+            xpos = ((xs * FRAME-x * 40) % (WIDTH + 40)) - 20
+            circle(xpos, y + (wiggle * random.random() * 20.0), 20 + (wiggle * 2.0) * distance * 8.0)
+
+        #xs = -sin(y) * 4.0
+        #for x in xrange(0, 60):
+        #    circle(WIDTH-xs * WIDTH - FRAME + x * 40, y+40, 20)

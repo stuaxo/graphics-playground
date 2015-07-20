@@ -1,0 +1,153 @@
+from planar import Vec2
+
+#points = [
+#    Vec2(300, 400),
+#    Vec2(300, 300),
+#    Vec2(400, 200),
+#    Vec2(300, 100)
+#]
+
+lines = []
+state = None
+
+def line_intersection(p0, p1, p2, p3):
+    # from http://stackoverflow.com/questions/563198/how-do-you-detect-where-two-line-segments-intersect
+    s1 = p1 - p0
+    s2 = p3 - p2
+
+    if (-s2.x * s1.y + s1.x * s2.y) == 0:
+        s = 0
+    else:
+        s = (-s1.y * (p0.x - p2.x) + s1.x * (p0.y - p2.y)) / (-s2.x * s1.y + s1.x * s2.y)
+
+    if (-s2.x * s1.y + s1.x * s2.y) == 0:
+        t = 0
+    else:
+        t = ( s2.x * (p0.y - p2.y) - s2.y * (p0.x - p2.x)) / (-s2.x * s1.y + s1.x * s2.y)
+
+    #if (s >= 0 and s <= 1 and t >= 0 and t <= 1):
+    if True:
+        # Collision detected 
+        x = p0.x + (t * s1.x)
+        y = p0.y + (t * s1.y)
+        return Vec2(x, y)
+
+    #  No collision 
+    return None
+
+
+
+def c_rect(v, w=10., h=None, angle=0):
+    # draw centered rect at vector x, y
+    if h is None:
+        h = w
+
+    push()
+    rotate(angle)
+    rect(v.x-(w / 2), v.y-(h/2), w, h)
+    pop()
+
+def v_line(a, b):
+    # Draw a line from a to b
+    line(a.x, a.y, b.x, b.y)
+
+def draw_outline(points, width):
+    # iterate over sets of two lines made up of points [a, b, c]
+    # a  is   previous  x, y
+    # b  is   current   x, y
+    # c  is   next      x, y 
+    #
+    # abc is used as it is a convention in graphics tutorials
+
+    a = points[0]
+    b = points[1]
+
+    slope_ab = b-a
+    angle_ab = slope_ab.angle
+    mid_ab=Vec2((a.x+b.x) / 2., (a.y+b.y) / 2.)
+
+    tangent=Vec2(0, width).rotated(slope_ab.angle)
+    outer_a = a + tangent
+    outer_mid_ab = outer_a
+
+    # draw start cap
+    v_line(a-tangent, outer_a)
+
+    for i, b in enumerate(points[1:-1], start=1):
+        c = points[i+1]        
+
+        slope_bc = c-b
+        mid_bc = Vec2((b.x+c.x) / 2., (b.y+c.y) / 2.)
+
+        tangent=Vec2(0, width).rotated(slope_bc.angle)
+        outer_mid_bc = mid_bc+tangent
+
+        outer_b = line_intersection(
+            outer_mid_ab, outer_mid_ab-slope_ab,
+            outer_mid_bc, outer_mid_bc-slope_bc,
+        )
+
+        #stroke(1, 0, 1)
+        v_line(outer_a, outer_b)
+
+        # store all params for next iteration
+        a = b
+        slope_ab = slope_bc
+        mid_ab = mid_bc
+        outer_mid_ab = outer_mid_bc
+        outer_a = outer_b
+
+    else:
+        # draw last seg
+        c=points[-1]
+        slope_bc = c-b
+        outer_b = c+Vec2(0, width).rotated(slope_bc.angle)
+        v_line(outer_a, outer_b)
+
+
+def draw_line(points, width):
+    if points and len(points) > 2:
+        draw_outline(points, width)
+        draw_outline(list(reversed(points)), width)
+
+def draw():
+    global lines
+    global state
+
+    var("width", NUMBER, 10., .1, 40.)
+    # speed(0) ... maybe this *should* be possible, it breaks things now though
+    strokewidth(4)
+    size(800, 800)
+    stroke(0)
+    fill(1, 0, 0)
+    for points in lines:
+        draw_line(points, width)
+    
+    if keydown and state==None:
+        k = key.upper()
+        if k == 'C':
+            lines = []
+        if keycode == KEY_BACKSPACE:
+            lines = lines[:-1]
+            state='DELETING'
+    else:
+        if state=='DELETING':
+            state=None
+
+    if mousedown:
+        if state == None:
+            lines.append([])
+            state = 'DRAWING'
+
+        points = lines[-1]
+        pos=Vec2(MOUSEX, MOUSEY)
+        if points:
+            if pos.distance_to(points[-1]) > 10:
+                points.append(pos)
+        else:
+            points.append(pos)
+    else:
+        state=None
+
+    text("C to clear", 20, 20)
+    text("Backspace Erases", 20, 40)
